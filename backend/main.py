@@ -3,7 +3,7 @@ from mtcnn import MTCNN
 import url_loader
 import files_loader
 from faces import *
-
+#### WE NEED TO MOVE TO [ DeepFace ] library for face detection and embedding
 #main function
 
 detector = MTCNN()

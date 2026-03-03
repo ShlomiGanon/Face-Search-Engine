@@ -4,6 +4,13 @@ import cv2
 import files_loader
 
 
+#### WE NEED TO MOVE TO [ DeepFace ]                   library for face detection and embedding
+#                                     : more fast but less accurate than InsightFace
+
+
+#### OR WE MOVE TO      [ insightface (FaceAnalysis) ] library for face detection and embedding
+#                                     : more accurate but slower than DeepFace
+
 class Face_Coordinates:
 
     def __init__(self, x,y,width,height):
