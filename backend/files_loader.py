@@ -16,8 +16,11 @@ def load_video_as_rgb(video_path):
         ret, frame = cap.read()
         if not ret:
             if cap.get(cv2.CAP_PROP_POS_FRAMES) >= cap.get(cv2.CAP_PROP_FRAME_COUNT):
-                break #if the frame is the last frame, break
-            frames.append(None) #if the frame is not read, append None
+                #(CAP_PROP_POS_FRAMES) is the current frame number
+                #(CAP_PROP_FRAME_COUNT) is the total number of frames
+                #if the frame is the last frame, break
+                break 
+            frames.append(None) #append None to keep the same length as the frames list
         else:
             frames.append(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
         

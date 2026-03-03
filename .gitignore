@@ -1,6 +1,11 @@
+#ignore all files in sandbox folder but keep the gitkeep file (to make the folder visible to git)
 sandbox/*
 !sandbox/.gitkeep
-.venv/
+#ignore venv folder (virtual environment)
+.venv/ 
+#ignore mtcnn folder (MTCNN library)
 mtcnn/
+#ignore vscode files
 .vscode/
-backend/__pycache__/
+#ignore all pycache files in the project
+**/__pycache__/ 
