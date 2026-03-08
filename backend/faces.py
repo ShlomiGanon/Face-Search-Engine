@@ -1,12 +1,15 @@
 
 import os
-from mtcnn import MTCNN
 from deepface import DeepFace
+import mtcnn
 import files_loader
 import config
 import numpy as np
 
 #class to store the face coordinates
+#detector is a global variable that is used to detect the faces
+#detector is a MTCNN object or a string (detector_backend)
+
 
 class Detected_Face:
 
@@ -66,15 +69,15 @@ def is_valid_face(face_object : dict , confidence_threshold : float = config.FAC
 
 
 #define function to extract faces_coordinates from an image by the detector [mtcnn or deepface]
-def extract_faces_coordinates_from_image(image , detector : MTCNN | str) -> list[Detected_Face]:
+def extract_faces_coordinates_from_image(image) -> list[Detected_Face]:
     faces = []
     detected_faces = []
     try:
-        if isinstance(detector, MTCNN):
-            detected_faces = detector.detect_faces(image)
+        if isinstance(config.DETECTOR, mtcnn.MTCNN):
+            detected_faces = config.DETECTOR.detect_faces(image)
 
-        elif isinstance(detector, str):
-            detected_faces = DeepFace.extract_faces(img_path=image, detector_backend=detector, enforce_detection=False)
+        elif isinstance(config.DETECTOR, str):
+            detected_faces = DeepFace.extract_faces(img_path=image, detector_backend=config.DETECTOR, enforce_detection=False)
         else:
             raise TypeError("Detector is not a MTCNN or a string (detector_backend)")
         
@@ -88,7 +91,7 @@ def extract_faces_coordinates_from_image(image , detector : MTCNN | str) -> list
 
 #define function to extract faces from an image by face coordinates
 #return the list of face images [None if the confidence is less than the minimum confidence]
-def extract_faces_from_image(image , faces_coordinates : list[Detected_Face] , index_alignment : bool = True , min_confidence : float = 0) -> list[np.ndarray | None]:
+def extract_faces_from_image(image : np.ndarray , faces_coordinates : list[Detected_Face] , index_alignment : bool = True , min_confidence : float = 0) -> list[np.ndarray | None]:
     if faces_coordinates is None or len(faces_coordinates) == 0:
         return []
     

@@ -1,7 +1,6 @@
 import os
 
 import hashlib
-from mtcnn import MTCNN
 import url_loader
 import config
 import metadata as metadata_module
@@ -34,10 +33,10 @@ def get_Harvested_Face_id(media_url : str , face_index : int , frame_index : int
     return hashlib.sha256(media_url.encode()).hexdigest() + "_" + str(face_index) + "_" + str(frame_index)
 
 
-def Store_Harvested_Post(post_metadata: metadata_module.Post_Metadata, detector: MTCNN | str):
+def Store_Harvested_Post(post_metadata: metadata_module.Post_Metadata):
     faces_ids: list[str] = []
     try:
-        frames = Harveste_URL(post_metadata.get_media_url(), detector , False)
+        frames = Harveste_URL(post_metadata.get_media_url() , False)
         frame_index = 0
         for frame in frames:
             face_index = 0
@@ -57,15 +56,15 @@ def Store_Harvested_Post(post_metadata: metadata_module.Post_Metadata, detector:
         raise ProcessException(e)
 
 #Harveste a URL and return a list of frames with the faces images
-def Harveste_URL(url: str, detector: MTCNN | str, index_alignment: bool = True, min_confidence: float = config.FACE_CONFIDENCE_THRESHOLD) -> list[list[np.ndarray | None]]:
+def Harveste_URL(url: str,index_alignment: bool = True, min_confidence: float = config.FACE_CONFIDENCE_THRESHOLD) -> list[list[np.ndarray | None]]:
     file = None
     try:
         file = url_loader.download_url_to_file(url, config.DOWNLOAD_PATH)
         if url_loader.is_an_image_file(file):
-            faces_images = Harveste_Image(file, detector, index_alignment, min_confidence)
+            faces_images = Harveste_Image(file, index_alignment, min_confidence)
             return [faces_images]#return a list of one frame with the faces images
         elif url_loader.is_a_video_file(file):
-            return Harveste_Video(file, detector, index_alignment, min_confidence)
+            return Harveste_Video(file, index_alignment, min_confidence)
         else:
             raise NotSupportedException()
     finally:
@@ -74,26 +73,28 @@ def Harveste_URL(url: str, detector: MTCNN | str, index_alignment: bool = True, 
 
 
 #Harveste a frame and return a list of faces images
-def Harveste_Frame(frame: np.ndarray, detector: MTCNN | str, index_alignment: bool = True, min_confidence: float = config.FACE_CONFIDENCE_THRESHOLD) -> list[np.ndarray | None]:
-    faces_coordinates = faces_module.extract_faces_coordinates_from_image(frame, detector)
+def Harveste_Frame(frame: np.ndarray, index_alignment: bool = True, min_confidence: float = config.FACE_CONFIDENCE_THRESHOLD) -> list[np.ndarray | None]:
+    faces_coordinates = faces_module.extract_faces_coordinates_from_image(frame)
     faces_images = faces_module.extract_faces_from_image(frame, faces_coordinates, index_alignment, min_confidence)
     return faces_images
 
 #Harveste an image and return a list of faces images
-def Harveste_Image(image_path: str, detector: MTCNN | str, index_alignment: bool = True, min_confidence: float = config.FACE_CONFIDENCE_THRESHOLD) -> list[np.ndarray | None]:
+def Harveste_Image(image_path: str, index_alignment: bool = True, min_confidence: float = config.FACE_CONFIDENCE_THRESHOLD) -> list[np.ndarray | None]:
     image = files_loader.load_as_rgb(image_path)
     if not files_loader.is_valid_image(image):
-        return []
-    return Harveste_Frame(image, detector, index_alignment, min_confidence)
+        #return empty list if the image is not valid
+        return [] 
+    return Harveste_Frame(image, index_alignment, min_confidence)
 
 #Harveste a video and return a list of frames with the faces images
-def Harveste_Video(video_path: str, detector: MTCNN | str, index_alignment: bool = True, min_confidence: float = config.FACE_CONFIDENCE_THRESHOLD) -> list[list[np.ndarray | None]]:
+def Harveste_Video(video_path: str, index_alignment: bool = True, min_confidence: float = config.FACE_CONFIDENCE_THRESHOLD) -> list[list[np.ndarray | None]]:
     result: list[list[np.ndarray | None]] = [] #list of frames, each frame is a list of faces images inside the frame
     frames = files_loader.load_video_as_rgb(video_path)
     for frame in frames:
         if frame is None or not files_loader.is_valid_image(frame):
-            result.append([]) #append empty list if the frame is None
+            #append empty list if the frame is None or not valid
+            result.append([]) 
             continue
-        faces_images = Harveste_Frame(frame, detector, index_alignment, min_confidence)
+        faces_images = Harveste_Frame(frame, index_alignment, min_confidence)
         result.append(faces_images)
     return result
