@@ -22,10 +22,11 @@ while True:
         break
     else:
 
-        faces = Face_Harvester.Harveste_URL(url)
-        for face in faces:
-            embedding = Digital_Identity.get_face_embedding(face)
-            results = face_vector_store.search_face(embedding)
-            for result in results:
-                if result["score"] > 0.5:   
-                    print(f"Found {result['face_id']} with score {result['score']}")
+        frames = Face_Harvester.Harveste_URL(url)
+        for frame in frames:
+            for face in frame:
+                embedding = Digital_Identity.get_face_embedding(face)
+                results = face_vector_store.search_face(embedding)
+                for result in results:
+                    if result["score"] > 0.5:   
+                        print(f"Found {result['face_id']} with score {result['score']}")
