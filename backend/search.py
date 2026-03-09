@@ -23,10 +23,16 @@ while True:
     else:
 
         frames = Face_Harvester.Harveste_URL(url)
+        frame_count = 0
+        face_count = 0
         for frame in frames:
+            frame_count += 1
             for face in frame:
+                face_count += 1
                 embedding = Digital_Identity.get_face_embedding(face)
                 results = face_vector_store.search_face(embedding)
                 for result in results:
                     if result["score"] > 0.5:   
                         print(f"Found {result['face_id']} with score {result['score']}")
+
+        print(f"Found {face_count} faces in {frame_count} frames")
