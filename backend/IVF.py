@@ -160,7 +160,7 @@ class FaceVectorStore:
     #          [{"id": 42, "score": 0.97}, {"id": 7, "score": 0.91}, ...]
     #          An empty list is returned when the index contains no vectors.
     def search_face(
-        self,
+        self, 
         query_embedding: np.ndarray,
         k: int = 5,
         nprobe: int = 20,
