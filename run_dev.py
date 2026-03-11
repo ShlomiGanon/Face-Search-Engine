@@ -18,13 +18,24 @@ FRONTEND_DIR = PROJECT_ROOT / "frontend"
 processes = []
 
 
-def ensure_backend_deps():
+def find_venv_python():
+    """Return the venv Python executable if it exists, otherwise sys.executable."""
+    if sys.platform == "win32":
+        venv_python = PROJECT_ROOT / ".venv" / "Scripts" / "python.exe"
+    else:
+        venv_python = PROJECT_ROOT / ".venv" / "bin" / "python"
+    if venv_python.exists():
+        return str(venv_python)
+    return sys.executable
+
+
+def ensure_backend_deps(python_exe):
     """Install backend API deps (fastapi, uvicorn) if not found."""
     missing = []
     for mod in ("fastapi", "uvicorn"):
         try:
             subprocess.run(
-                [sys.executable, "-c", f"import {mod}"],
+                [python_exe, "-c", f"import {mod}"],
                 capture_output=True,
                 check=True,
             )
@@ -34,7 +45,7 @@ def ensure_backend_deps():
         pkgs = ["fastapi", "uvicorn[standard]", "python-multipart"]
         print("Installing backend API dependencies...")
         subprocess.run(
-            [sys.executable, "-m", "pip", "install"] + pkgs,
+            [python_exe, "-m", "pip", "install"] + pkgs,
             check=True,
         )
 
@@ -100,7 +111,8 @@ def main():
         print("Error: frontend/package.json not found")
         sys.exit(1)
 
-    ensure_backend_deps()
+    python_exe = find_venv_python()
+    ensure_backend_deps(python_exe)
 
     npm_path, use_npx, node_dir = find_npm()
     if not npm_path:
@@ -123,7 +135,7 @@ def main():
 
     # Backend: uvicorn (from backend dir so imports work)
     backend = subprocess.Popen(
-        [sys.executable, "-m", "uvicorn", "api_server:app", "--reload", "--host", "0.0.0.0"],
+        [python_exe, "-m", "uvicorn", "api_server:app", "--reload", "--host", "0.0.0.0"],
         cwd=str(BACKEND_DIR),
         stdout=sys.stdout,
         stderr=sys.stderr,

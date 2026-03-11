@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react'
 import { useDropzone } from 'react-dropzone'
 
-export default function QueryFaceUpload({ onSearchFile, onSearchUrl, loading, error, previewBase64, backendReady }) {
+export default function QueryFaceUpload({ onSearchFile, onSearchUrl, onUrlChange, loading, error, previewBase64, backendReady }) {
   const [mode, setMode] = useState('file')
   const [urlInput, setUrlInput] = useState('')
   const [pendingFile, setPendingFile] = useState(null)
@@ -31,10 +31,10 @@ export default function QueryFaceUpload({ onSearchFile, onSearchUrl, loading, er
 
   const canSearch = mode === 'file' ? !!pendingFile : urlInput.trim().length > 0
 
-  const displayPreview = previewBase64
-    ? `data:image/jpeg;base64,${previewBase64}`
-    : mode === 'url' && urlInput.trim()
-      ? urlInput.trim()
+  const displayPreview = mode === 'url' && urlInput.trim()
+    ? urlInput.trim()
+    : previewBase64
+      ? `data:image/jpeg;base64,${previewBase64}`
       : pendingPreview
 
   return (
@@ -147,7 +147,7 @@ export default function QueryFaceUpload({ onSearchFile, onSearchUrl, loading, er
               <input
                 type="url"
                 value={urlInput}
-                onChange={(e) => setUrlInput(e.target.value)}
+                onChange={(e) => { setUrlInput(e.target.value); onUrlChange?.() }}
                 onKeyDown={(e) => e.key === 'Enter' && canSearch && !loading && handleSearch()}
                 placeholder="https://example.com/photo.jpg"
                 disabled={loading}

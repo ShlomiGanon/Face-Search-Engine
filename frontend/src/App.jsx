@@ -75,6 +75,13 @@ export default function App() {
     })
   }, [runSearch])
 
+  const handleUrlChange = useCallback(() => {
+    setResults([])
+    setQueryFaces([])
+    setHasSearched(false)
+    setError(null)
+  }, [])
+
   const openComparison = (result) => {
     setModalState({
       queryFaceBase64: queryFaces[0] || null,
@@ -94,7 +101,6 @@ export default function App() {
         {/* Subtle top accent line */}
         <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-500 to-transparent opacity-70" />
         <div className="flex items-center gap-3 relative z-10">
-          <span className="text-3xl">🔎</span>
           <h1 className="text-4xl font-extrabold tracking-widest font-mono">
             <span className="text-slate-100">OPTI</span><span className="text-cyan-400">MATCH</span>
           </h1>
@@ -115,6 +121,7 @@ export default function App() {
           <QueryFaceUpload
             onSearchFile={handleSearchFile}
             onSearchUrl={handleSearchUrl}
+            onUrlChange={handleUrlChange}
             loading={loading}
             error={error}
             previewBase64={queryFaces[0]}

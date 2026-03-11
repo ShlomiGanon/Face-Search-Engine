@@ -1,5 +1,5 @@
 import os
-from deepface import DeepFace
+
 import mtcnn
 import files_loader
 import config
@@ -100,6 +100,7 @@ def detect_faces_in_image(image , detector : mtcnn.MTCNN | str = config.DETECTOR
         if isinstance(detector, mtcnn.MTCNN):
             raw_detections = detector.detect_faces(image)
         elif isinstance(detector, str):
+            from deepface import DeepFace
             # DeepFace.extract_faces returns a list of dicts: [{'face':..., 'facial_area':..., 'confidence':...}]
             raw_detections = DeepFace.extract_faces(img_path=image, detector_backend=detector, enforce_detection=True)
         else:

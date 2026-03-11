@@ -18,3 +18,6 @@ backend/embeddings_models/models/*
 !backend/embeddings_models/models/.gitkeep
 #ignore metadata.db file
 metadata.db
+
+#ignore all files in node_modules folder
+node_modules/
