@@ -39,7 +39,7 @@ class ArcFaceEmbedding(FaceEmbeddingModel):
         ], dtype=np.float32)
 
         # 3. Calculate Affine Transform matrix
-        tform = cv2.estimateAffinePartial2D(src_landmarks, self.reference_landmarks, method=cv2.LMEDS)[0]
+        tform = cv2.estimateAffinePartial2D(src_landmarks, self.reference_landmarks, method=cv2.RANSAC)[0]
         
         # 4. Fallback if alignment fails
         if tform is None or not np.isfinite(tform).all():
