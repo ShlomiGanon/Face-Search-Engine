@@ -1,5 +1,23 @@
+#ignore all files in sandbox folder but keep the gitkeep file (to make the folder visible to git)
 sandbox/*
 !sandbox/.gitkeep
-.venv/*
-mtcnn/*
-.vscode/*
+#ignore venv folder (virtual environment)
+.venv/ 
+#ignore mtcnn folder (MTCNN library)
+mtcnn/
+#ignore vscode files
+.vscode/
+#ignore all pycache files in the project
+**/__pycache__/ 
+#ignore all files in faces folder but keep the gitkeep file (to make the folder visible to git)
+faces/
+download/
+
+#ignore all files in embeddings_models/models folder
+backend/embeddings_models/models/*
+!backend/embeddings_models/models/.gitkeep
+#ignore metadata.db file
+metadata.db
+
+#ignore all files in node_modules folder
+node_modules/
