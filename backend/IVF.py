@@ -18,7 +18,7 @@ NLIST = 100
 # Default paths for the index file and its ID-mapping sidecar
 INDEX_PATH = "face_vault.index"
 MAP_PATH   = "face_vault.map.json"
-
+MINIMUM_TRAINING_DATA_SIZE = NLIST * 39
 
 # ── Module-level helpers (private) ────────────────────────────────────────────
 
@@ -90,7 +90,7 @@ class FaceVectorStore:
     Both structures are persisted to a JSON sidecar (face_vault.map.json) so
     they reload in sync with the FAISS index on every restart.
     """
-
+    
     # What  : Loads the index and the ID-mapping sidecar from disk if they exist;
     #         otherwise initialises fresh empty structures.
     # Gets  : index_path — path to the .index file (default: face_vault.index)
@@ -291,6 +291,12 @@ class FaceVectorStore:
     # Returns: int
     def get_total_count(self) -> int:
         return int(self._index.ntotal)
+
+
+    def get_all_embeddings(self) -> np.ndarray:
+        #Returns all vectors currently in the index, shape (N, DIM).
+        vecs, _ = self._extract_all_vectors()
+        return vecs
 
     # ── Maintenance ───────────────────────────────────────────────────────────
 
