@@ -29,7 +29,7 @@ logging.getLogger("tensorflow").setLevel(logging.ERROR)
 # Resolve paths relative to project root; ensure cwd so config paths work
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 os.chdir(PROJECT_ROOT)
-INDEX_PATH = str(PROJECT_ROOT / "sandbox" / "face_vector_store.index")
+INDEX_PATH = str(PROJECT_ROOT / "face_vault.index")
 MAP_PATH = str(PROJECT_ROOT / "face_vault.map.json")
 FACES_DIR = PROJECT_ROOT / config.FACES_OUTPUT_PATH
 

@@ -46,6 +46,7 @@ def clear_tables() -> None:
         if connection: connection.close()
 
 def link_harvested_faces_to_post(harvested_faces_id: str, post_id: str, cropped_face: Cropped_Face.CroppedFace):
+    
     landmarks = cropped_face.get_landmarks()
     le = landmarks.get('left_eye', (None, None))
     re = landmarks.get('right_eye', (None, None))

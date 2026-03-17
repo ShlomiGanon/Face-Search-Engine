@@ -15,7 +15,7 @@ warnings.filterwarnings('ignore', category=DeprecationWarning)
 import config
 import metadata as metadata_module
 from metadata import Post_Metadata
-
+import files_loader
 logging.getLogger('tensorflow').setLevel(logging.ERROR)
 
 #------------ clear ivf ------------
@@ -25,6 +25,7 @@ if os.path.exists("face_vault.map.json"):
     os.remove("face_vault.map.json")#clear the face vault map
 if os.path.exists("sandbox/face_vector_store.index"):
     os.remove("sandbox/face_vector_store.index")#clear the face vector store index
+os.makedirs(config.FACES_OUTPUT_PATH, exist_ok=True)
 
 metadata_module.clear_tables()
 MAX_RETRIES = 8 #max retries for adding faces to the ivf index
@@ -52,6 +53,7 @@ for source in os.listdir(path):
                 face_id = Face_Harvester.get_Harvested_Face_id(image_path, 0, faces_count)
                 embedding = Digital_Identity.get_face_embedding(cropped_face)
                 metadata_module.link_harvested_faces_to_post(face_id, post_id, cropped_face)
+                files_loader.save_as_image(cropped_face.get_image(), os.path.join(config.FACES_OUTPUT_PATH, f"{face_id}.jpg"))
                 embeddings_list.append(embedding)
                 face_ids_list.append(face_id)
         if embeddings_list:

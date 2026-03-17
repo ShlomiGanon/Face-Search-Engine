@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import List, Optional
 import faiss
 import numpy as np
+import time
 
 # ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -202,10 +203,18 @@ class FaceVectorStore:
     # What  : Adds many face embeddings to the index in a single FAISS call,
     #         then saves to disk once.  Preferred over calling add_face in a loop
     #         because the write_index cost is paid only once.
-    # Gets  : embeddings — 2-D numpy array of shape (N, 512), L2-normalised rows
-    #         face_ids   — list of N unique string identifiers (one per embedding)
+    #         On PermissionError when saving the map file, retries up to
+    #         save_retries times so the caller does not need to retry the whole batch.
+    # Gets  : embeddings    — 2-D numpy array of shape (N, 512), L2-normalised rows
+    #         face_ids      — list of N unique string identifiers (one per embedding)
+    #         save_retries  — optional; number of retries for _save_map() on failure (default 3)
     # Returns: nothing
-    def add_faces_batch(self, embeddings: np.ndarray, face_ids: List[str]) -> None:
+    def add_faces_batch(
+        self,
+        embeddings: np.ndarray,
+        face_ids: List[str],
+        save_retries: int = 3,
+    ) -> None:
         # ascontiguousarray ensures the memory layout is C-contiguous,
         # which FAISS requires — slices of larger arrays can be non-contiguous.
         vecs = np.ascontiguousarray(
@@ -231,7 +240,15 @@ class FaceVectorStore:
         )
         self._index.add_with_ids(vecs, person_ids)
         faiss.write_index(self._index, str(self._path))
-        self._save_map()
+
+        for attempt in range(save_retries):
+            try:
+                self._save_map()
+                break
+            except PermissionError:
+                if attempt == save_retries - 1:
+                    raise
+                time.sleep(0.25)
 
     # What  : Removes a single face from the index by its face_id, then saves.
     # Gets  : face_id — the string identifier that was used when adding the face
