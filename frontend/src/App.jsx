@@ -93,16 +93,21 @@ export default function App() {
 
   const filteredResults = results.filter((r) => r.score * 100 >= minScore)
 
-  const topIdentity = useMemo(() => {
-    if (!filteredResults.length) return null
-    const counts = {}
+  const identityRanking = useMemo(() => {
+    if (!filteredResults.length) return []
+    const sumByUsername = {}
+    const countByUsername = {}
     for (const r of filteredResults) {
-      if (r.username) counts[r.username] = (counts[r.username] || 0) + 1
+      if (!r.username) continue
+      sumByUsername[r.username] = (sumByUsername[r.username] || 0) + r.score
+      countByUsername[r.username] = (countByUsername[r.username] || 0) + 1
     }
-    const entries = Object.entries(counts)
-    if (!entries.length) return null
-    const top = entries.sort((a, b) => b[1] - a[1])[0]
-    return { username: top[0], pct: Math.round((top[1] / filteredResults.length) * 100) }
+    return Object.keys(sumByUsername)
+      .map((username) => ({
+        username,
+        pct: Math.round((sumByUsername[username] / countByUsername[username]) * 100),
+      }))
+      .sort((a, b) => b.pct - a.pct)
   }, [filteredResults])
 
   return (
@@ -121,14 +126,6 @@ export default function App() {
           ◈ Face Search Engine — Visual Intelligence Platform ◈
         </span>
 
-        {hasSearched && topIdentity && (
-          <div className="absolute right-6 top-1/2 -translate-y-1/2 z-10 flex flex-col items-end gap-0.5
-                          border border-cyan-900/60 bg-slate-900/70 rounded-lg px-4 py-2 backdrop-blur-sm">
-            <span className="text-[10px] text-cyan-700 font-mono tracking-widest uppercase">Top Identity</span>
-            <span className="text-cyan-300 font-mono font-bold text-sm tracking-wide">@{topIdentity.username}</span>
-            <span className="text-cyan-600 font-mono text-[11px]">{topIdentity.pct}% of results</span>
-          </div>
-        )}
       </header>
 
       <main className="flex gap-6 p-6 items-start">
@@ -151,8 +148,25 @@ export default function App() {
         </aside>
 
         <section className="flex-1 min-w-0">
-          <div className="mb-4 flex items-center gap-4">
+          <div className="mb-4 flex items-center gap-4 flex-wrap">
             <ScoreSlider value={minScore} onChange={setMinScore} />
+            {hasSearched && identityRanking.length > 0 && (
+              <div className="flex items-center gap-3 border border-cyan-900/60 bg-slate-900/70 rounded-lg px-4 py-2 backdrop-blur-sm max-h-10 overflow-hidden hover:max-h-60 transition-all duration-300">
+                <span className="text-[10px] text-cyan-700 font-mono tracking-widest uppercase shrink-0">Identities</span>
+                <div className="flex flex-col gap-0.5 overflow-y-auto max-h-56">
+                  {identityRanking.map((item, i) => (
+                    <div key={item.username} className="flex items-center gap-3 justify-between min-w-[180px]">
+                      <span className={`font-mono text-xs tracking-wide ${i === 0 ? 'text-cyan-300 font-bold' : 'text-slate-400'}`}>
+                        @{item.username}
+                      </span>
+                      <span className={`font-mono text-xs tabular-nums ${i === 0 ? 'text-cyan-400' : 'text-slate-500'}`}>
+                        {item.pct}%
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
           <MatchGallery
             results={filteredResults}
