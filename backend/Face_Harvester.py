@@ -7,6 +7,7 @@ import metadata as metadata_module
 import files_loader
 import numpy as np
 import Cropped_Face
+
 class ProcessException(Exception):
     def __init__(self, cause: Exception | str = ""):
         self.cause = cause
@@ -47,7 +48,7 @@ def Store_Harvested_Post(post_metadata: metadata_module.Post_Metadata):
             for cropped_face in frame:
                 face_id = get_Harvested_Face_id(post_metadata.get_media_url(), face_index, frame_index)
                 files_loader.save_as_image(cropped_face.get_image(), os.path.join(config.FACES_OUTPUT_PATH, f"{face_id}.jpg"))
-                metadata_module.link_harvested_faces_to_post(face_id, post_metadata.get_post_id(), cropped_face)
+                metadata_module.link_face_id_to_post(face_id, post_metadata.get_post_id(), cropped_face)
                 post_faces.append({"face_id": face_id, "face_image": cropped_face})
                 face_index += 1
             frame_index += 1

@@ -2,17 +2,39 @@ import sqlite3
 import config
 import Cropped_Face
 #table name for the harvested faces to post id relationship
-HARVESTED_FACES_TABLE_NAME = 'harvested_faces_TO_post_id' 
+FACE_ID_TO_POST_ID_TABLE_NAME = 'face_id_TO_post_id' 
 #table name for the posts metadata
 POSTS_METADATA_TABLE_NAME = 'posts_metadata'
 
+def get_username_by_face_id(given_face_id: str) -> str:
+    connection = None
+    try:
+
+    #table - faceid to postid
+    #table - postid to metadata [username , media_url , link_to_post , timestamp , platform]
+        connection = sqlite3.connect(config.METADATA_PATH)
+        cursor = connection.cursor()
+        cursor.execute(f"""
+            SELECT username FROM {POSTS_METADATA_TABLE_NAME}
+            WHERE post_id = (SELECT post_id FROM {FACE_ID_TO_POST_ID_TABLE_NAME} WHERE face_id = ?)
+        """, (given_face_id,))
+        row = cursor.fetchone()
+        if row is None:
+            raise ValueError(f"Face ID {given_face_id} not found in the database")
+        return row[0]
+    finally:
+        if connection: connection.close()
+
+
+
 class Post_Metadata:
-    def __init__(self, post_id , media_url , link_to_post = None, timestamp = None, platform = None):
+    def __init__(self, post_id , media_url , link_to_post = None, timestamp = None, platform = None, username = None):
         self.post_id = post_id
         self.media_url = media_url
         self.link_to_post = link_to_post
         self.timestamp = timestamp
         self.platform = platform
+        self.username = username
 
     def get_post_id(self):
         return self.post_id
@@ -28,7 +50,9 @@ class Post_Metadata:
 
     def get_link_to_post(self):
         return self.link_to_post
-
+    
+    def get_username(self):
+        return self.username
 
 def clear_tables() -> None:
     connection = None
@@ -39,13 +63,13 @@ def clear_tables() -> None:
             DROP TABLE IF EXISTS {POSTS_METADATA_TABLE_NAME}
         ''')
         cursor.execute(f'''
-            DROP TABLE IF EXISTS {HARVESTED_FACES_TABLE_NAME}
+            DROP TABLE IF EXISTS {FACE_ID_TO_POST_ID_TABLE_NAME}
         ''')
         connection.commit()
     finally:
         if connection: connection.close()
 
-def link_harvested_faces_to_post(harvested_faces_id: str, post_id: str, cropped_face: Cropped_Face.CroppedFace):
+def link_face_id_to_post(face_id: str, post_id: str, cropped_face: Cropped_Face.CroppedFace):
     
     landmarks = cropped_face.get_landmarks()
     le = landmarks.get('left_eye', (None, None))
@@ -59,9 +83,9 @@ def link_harvested_faces_to_post(harvested_faces_id: str, post_id: str, cropped_
         cursor = connection.cursor()
         cursor.execute(
             f'''
-            CREATE TABLE IF NOT EXISTS {HARVESTED_FACES_TABLE_NAME} 
+            CREATE TABLE IF NOT EXISTS {FACE_ID_TO_POST_ID_TABLE_NAME} 
             (
-                harvested_faces_id TEXT PRIMARY KEY,
+                face_id TEXT PRIMARY KEY,
                 post_id TEXT,
                 left_eye_x REAL, left_eye_y REAL,
                 right_eye_x REAL, right_eye_y REAL,
@@ -72,15 +96,15 @@ def link_harvested_faces_to_post(harvested_faces_id: str, post_id: str, cropped_
             )
             '''
         )
-        cursor.execute(f'CREATE INDEX IF NOT EXISTS idx_post_id ON {HARVESTED_FACES_TABLE_NAME} (post_id)')
+        cursor.execute(f'CREATE INDEX IF NOT EXISTS idx_post_id ON {FACE_ID_TO_POST_ID_TABLE_NAME} (post_id)')
         cursor.execute(
             f'''
-            INSERT OR REPLACE INTO {HARVESTED_FACES_TABLE_NAME}
-            (harvested_faces_id, post_id, left_eye_x, left_eye_y, right_eye_x, right_eye_y, 
+            INSERT OR REPLACE INTO {FACE_ID_TO_POST_ID_TABLE_NAME}
+            (face_id, post_id, left_eye_x, left_eye_y, right_eye_x, right_eye_y, 
              nose_x, nose_y, mouth_left_x, mouth_left_y, mouth_right_x, mouth_right_y)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''',
-            (harvested_faces_id, post_id,
+            (face_id, post_id,
              le[0], le[1], re[0], re[1], no[0], no[1], ml[0], ml[1], mr[0], mr[1])
         )
         connection.commit()
@@ -102,7 +126,8 @@ def save_post_metadata(posts_metadata : Post_Metadata):
             media_url TEXT,
             link_to_post TEXT,
             timestamp TEXT,
-            platform TEXT
+            platform TEXT,
+            username TEXT
         )
         ''')
 
@@ -110,8 +135,8 @@ def save_post_metadata(posts_metadata : Post_Metadata):
         cursor.execute(
         f'''
         INSERT OR REPLACE INTO {POSTS_METADATA_TABLE_NAME}
-        (post_id, media_url, link_to_post, timestamp, platform)
-        VALUES (?, ?, ?, ?, ?)
+        (post_id, media_url, link_to_post, timestamp, platform, username)
+        VALUES (?, ?, ?, ?, ?, ?)
         ''', 
         (
         posts_metadata.get_post_id(),
@@ -119,6 +144,7 @@ def save_post_metadata(posts_metadata : Post_Metadata):
         posts_metadata.get_link_to_post(),
         posts_metadata.get_timestamp(),
         posts_metadata.get_platform(),
+        posts_metadata.get_username(),
         )
         )
         connection.commit()
@@ -134,10 +160,10 @@ def get_post_by_face_id(face_id: str) -> "Post_Metadata | None":
         cursor = connection.cursor()
         cursor.execute(
             f"""
-            SELECT p.post_id, p.media_url, p.link_to_post, p.timestamp, p.platform
-            FROM {HARVESTED_FACES_TABLE_NAME} h
+            SELECT p.post_id, p.media_url, p.link_to_post, p.timestamp, p.platform, p.username
+            FROM {FACE_ID_TO_POST_ID_TABLE_NAME} h
             JOIN {POSTS_METADATA_TABLE_NAME} p ON h.post_id = p.post_id
-            WHERE h.harvested_faces_id = ?
+            WHERE h.face_id = ?
             """,
             (face_id,),
         )
@@ -150,6 +176,7 @@ def get_post_by_face_id(face_id: str) -> "Post_Metadata | None":
             link_to_post=row[2],
             timestamp=row[3],
             platform=row[4],
+            username=row[5],
         )
     finally:
         if connection:

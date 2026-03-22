@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useMemo } from 'react'
 import QueryFaceUpload from './components/QueryFaceUpload'
 import MatchGallery from './components/MatchGallery'
 import ScoreSlider from './components/ScoreSlider'
@@ -93,6 +93,18 @@ export default function App() {
 
   const filteredResults = results.filter((r) => r.score * 100 >= minScore)
 
+  const topIdentity = useMemo(() => {
+    if (!filteredResults.length) return null
+    const counts = {}
+    for (const r of filteredResults) {
+      if (r.username) counts[r.username] = (counts[r.username] || 0) + 1
+    }
+    const entries = Object.entries(counts)
+    if (!entries.length) return null
+    const top = entries.sort((a, b) => b[1] - a[1])[0]
+    return { username: top[0], pct: Math.round((top[1] / filteredResults.length) * 100) }
+  }, [filteredResults])
+
   return (
     <div className="min-h-screen text-slate-100" style={{ backgroundColor: '#050505' }}>
       {/* Header */}
@@ -108,6 +120,15 @@ export default function App() {
         <span className="text-xs text-cyan-800 tracking-widest uppercase font-mono relative z-10">
           ◈ Face Search Engine — Visual Intelligence Platform ◈
         </span>
+
+        {hasSearched && topIdentity && (
+          <div className="absolute right-6 top-1/2 -translate-y-1/2 z-10 flex flex-col items-end gap-0.5
+                          border border-cyan-900/60 bg-slate-900/70 rounded-lg px-4 py-2 backdrop-blur-sm">
+            <span className="text-[10px] text-cyan-700 font-mono tracking-widest uppercase">Top Identity</span>
+            <span className="text-cyan-300 font-mono font-bold text-sm tracking-wide">@{topIdentity.username}</span>
+            <span className="text-cyan-600 font-mono text-[11px]">{topIdentity.pct}% of results</span>
+          </div>
+        )}
       </header>
 
       <main className="flex gap-6 p-6 items-start">

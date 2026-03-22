@@ -3,8 +3,8 @@ from Face_Detection import Detected_Face
 
 
 class CroppedFace:
-    def __init__(self, rough_crop: np.ndarray, landmarks: dict[str, tuple[int, int]]):
-        self.rough_crop = rough_crop
+    def __init__(self, raw_face_image: np.ndarray, landmarks: dict[str, tuple[int, int]]):
+        self.rough_crop = raw_face_image
         self.landmarks = landmarks
 
     def get_image(self) -> np.ndarray:

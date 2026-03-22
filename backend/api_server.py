@@ -73,12 +73,14 @@ def _enrich_result(face_id: str, score: float) -> dict:
         "platform": None,
         "timestamp": None,
         "media_url": None,
+        "username": None,
     }
     if post:
         result["link_to_post"] = post.get_link_to_post()
         result["platform"] = post.get_platform()
         result["timestamp"] = post.get_timestamp()
         result["media_url"] = post.get_media_url()
+        result["username"] = post.get_username()
     return result
 
 

@@ -120,18 +120,17 @@ def main():
         sys.exit(1)
     node_env = env_with_node(node_dir) if node_dir else None
 
-    # Frontend: ensure deps installed (need npm for install)
-    if not (FRONTEND_DIR / "node_modules").exists():
-        if use_npx:
-            print("Note: Run 'npm install' in frontend/ first. Trying npx vite...")
-        else:
-            print("Installing frontend dependencies...")
-            subprocess.run(
-                [npm_path, "install"],
-                cwd=str(FRONTEND_DIR),
-                check=True,
-                env=node_env,
-            )
+    # Frontend: always run npm install to pick up any dependency changes
+    if use_npx:
+        print("Note: Run 'npm install' in frontend/ first. Trying npx vite...")
+    else:
+        print("Installing frontend dependencies...")
+        subprocess.run(
+            [npm_path, "install"],
+            cwd=str(FRONTEND_DIR),
+            check=True,
+            env=node_env,
+        )
 
     # Backend: uvicorn (from backend dir so imports work)
     backend = subprocess.Popen(
