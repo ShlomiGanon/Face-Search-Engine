@@ -9,9 +9,15 @@ mtcnn/
 .vscode/
 #ignore all pycache files in the project
 **/__pycache__/ 
-#ignore all runtime data files (db, index, faces, downloads)
-backend/data/*
-!backend/data/**/.gitkeep
+# Ignore runtime data but keep directory structure via .gitkeep
+backend/data/db/*
+!backend/data/db/.gitkeep
+backend/data/index/*
+!backend/data/index/.gitkeep
+backend/data/faces/*
+!backend/data/faces/.gitkeep
+backend/data/downloads/*
+!backend/data/downloads/.gitkeep
 
 #ignore ML model weights
 backend/src/app/ml/models/*
