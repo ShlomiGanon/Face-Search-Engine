@@ -1,64 +1,93 @@
-# Face Search Engine: End-to-End Facial Recognition Pipeline
+# OptiMatch — Face Search Engine
 
-A high-performance facial recognition and retrieval system designed to detect, index, and search millions of faces from raw image and video datasets in milliseconds.
-
----
-
-## Project Overview
-
-This project is an automated pipeline that transforms raw scraped data into a searchable "Digital Identity" database. It utilizes state-of-the-art computer vision models for detection and embedding, coupled with high-speed vector indexing for real-time forensic analysis.
+Detect, index, and search faces from images and videos in milliseconds.
 
 ---
 
-## System Architecture
+## Prerequisites
 
-### Phase 1: The "Face Harvester" (Detection & Extraction)
-The entry point of the pipeline, responsible for isolating facial data from noise.
-- **Input:** Raw images and video frames
-- **Technology:** MTCNN / MediaPipe
-- **Key Features:**
-  - Automatic cropping of "Face Chips"
-  - Minimum quality filter: hard-coded threshold (e.g., 64×64 pixels) to discard low-resolution faces
-
-### Phase 2: The "Digital Identity" (Embedding Generation)
-Converting visual pixels into numerical biological signatures.
-- **Input:** Cropped Face Chips
-- **Technology:** FaceNet / ArcFace
-- **Optimization:** L2 Normalization
-
-### Phase 3: The "Brain" (Vector Indexing & Retrieval)
-The core search engine designed for extreme scalability.
-- **Input:** Face Embeddings
-- **Technology:** FAISS (Facebook AI Similarity Search)
-
-### Phase 4: The "Visual Investigator" (Search UI)
-A specialized dashboard for analysts to perform visual queries.
-- **Input:** User-uploaded query image
-- **Frontend:** React.js / Tailwind CSS
-
+- **Python 3.10+**
+- **Node.js 18+**
 
 ---
 
-## Installation & Setup
+## Installation
 
-**1. Clone the project**
 ```bash
+# 1. Clone
 git clone https://github.com/ShlomiGanon/Face-Search-Engine.git
 cd Face-Search-Engine
-```
 
-**2. Clone MTCNN into the project**
-```bash
-git clone https://github.com/ipazc/mtcnn mtcnn
-```
-
-**3. Create and activate a virtual environment**
-```bash
+# 2. Create and activate virtual environment
 python -m venv .venv
-.\.venv\Scripts\activate
+
+# Windows
+.\.venv\Scripts\Activate.ps1
+# macOS / Linux
+source .venv/bin/activate
+
+# 3. Install Python dependencies
+pip install -r requirements.txt
+
+# 4. Install frontend dependencies
+cd frontend && npm install && cd ..
 ```
 
-**4. Install dependencies**
-```bash
-pip install -r mtcnn/requirements.txt
+---
+
+## ArcFace Model
+
+The model weights are not included in the repository. Download `w600k_r50.onnx` from the [InsightFace model zoo](https://github.com/deepinsight/insightface/tree/master/model_zoo), rename it to `arcface_w600k_r50.onnx`, and place it at:
+
 ```
+backend/src/app/ml/models/arcface_w600k_r50.onnx
+```
+
+---
+
+## Building the Face Index
+
+Run once from `backend/` to ingest a dataset before searching.
+
+```bash
+cd backend
+
+# From a folder structure (backend/sandbox/datasets/<source>/<person>/)
+python -m scripts.build_index --source folders
+
+# From a CSV file
+python -m scripts.build_index --source csv --csv-path sandbox/dataset.csv
+```
+
+---
+
+## Running
+
+```bash
+python run.py
+```
+
+Starts both servers. Open **http://localhost:5173** in your browser.
+
+> The backend loads ML models on startup — wait 10–30 seconds for the "System Initializing" banner to disappear before searching.
+
+| Service | URL |
+|---|---|
+| Frontend | http://localhost:5173 |
+| Backend API | http://localhost:8000 |
+
+Press **Ctrl+C** to stop.
+
+---
+
+## Configuration
+
+All settings can be overridden with environment variables:
+
+| Variable | Default | Description |
+|---|---|---|
+| `DATA_DIR` | `backend/data/` | Root directory for runtime data |
+| `FACE_CONFIDENCE_THRESHOLD` | `0.5` | Minimum detection confidence |
+| `MIN_FACE_SIZE` | `64` | Minimum face size in pixels |
+
+Full configuration: `backend/src/app/config.py`
