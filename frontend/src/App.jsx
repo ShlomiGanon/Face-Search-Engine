@@ -11,8 +11,8 @@ export default function App() {
   // Each input mode keeps its own cropped-face result so switching tabs never bleeds state
   const [fileQueryFace, setFileQueryFace] = useState(null)
   const [urlQueryFace, setUrlQueryFace]   = useState(null)
-  // Always holds the query face from the most recent completed search (used by the comparison modal)
-  const [lastQueryFace, setLastQueryFace] = useState(null)
+  // All query faces from the most recent search (used by the comparison modal to pick the right one)
+  const [allQueryFaces, setAllQueryFaces] = useState([])
   const [results, setResults]             = useState([])
   const [hasSearched, setHasSearched]     = useState(false)
   const [minScore, setMinScore]           = useState(50)
@@ -51,14 +51,16 @@ export default function App() {
         throw new Error(err.detail || 'Search failed')
       }
       const data = await res.json()
-      const face  = data.query_faces?.[0] ?? null
+      const faces = data.query_faces ?? []
+      const face  = faces[0] ?? null
       onFaceResult(face)
-      setLastQueryFace(face)
+      setAllQueryFaces(faces)
       setResults(data.results || [])
       setHasSearched(true)
     } catch (e) {
       setError(e.message)
       onFaceResult(null)
+      setAllQueryFaces([])
       setResults([])
       setHasSearched(true)
     } finally {
@@ -105,8 +107,9 @@ export default function App() {
   }, [])
 
   const openComparison = (result) => {
+    const queryFaceIndex = result.query_face_index ?? 0
     setModalState({
-      queryFaceBase64: lastQueryFace,
+      queryFaceBase64: allQueryFaces[queryFaceIndex] ?? allQueryFaces[0] ?? null,
       matchFaceId: result.face_id,
       matchScore: result.score,
       matchMetadata: result,
