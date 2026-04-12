@@ -33,6 +33,7 @@ def download_to_temp_file(url: str, destination_folder: str) -> str:
     response = requests.get(url, stream=True, headers=headers)
 
     if response.status_code != 200:
+        os.remove(save_path)
         raise IOError(
             f"Failed to download URL {url} — HTTP {response.status_code}"
         )

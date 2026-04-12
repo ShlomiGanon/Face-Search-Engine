@@ -3,6 +3,16 @@ from __future__ import annotations
 import cv2
 import numpy as np
 
+from .url_loader import is_image_file, is_video_file
+
+
+def load_image_or_video(file_path: str) -> np.ndarray | list[np.ndarray]:
+    if is_image_file(file_path):
+        return load_image_as_rgb(file_path)
+    elif is_video_file(file_path):
+        return load_video_frames_as_rgb(file_path)
+    else:
+        raise ValueError(f"Unsupported file type: {file_path}")
 
 # Loads an image from disk and returns it as an RGB numpy array.
 # Raises an exception if the file cannot be read (e.g. wrong path or corrupt file).
@@ -55,3 +65,13 @@ def load_video_frames_as_rgb(video_path: str) -> list[np.ndarray | None]:
         if cap is not None:
             cap.release()
     return frames
+
+def convert_rgb_to_bgr(image_rgb: np.ndarray) -> np.ndarray:
+    """
+    Efficiently converts an RGB image to BGR format.
+    Ensures compatibility between RGB loaders and BGR-based detectors.
+    """
+    if image_rgb is None or image_rgb.size == 0:
+        return image_rgb
+        
+    return cv2.cvtColor(image_rgb, cv2.COLOR_RGB2BGR)

@@ -88,3 +88,34 @@ class DetectedFace:
             return DetectedFace(area["x"], area["y"], area["w"], area["h"], face_object["confidence"], keypoints)
         except KeyError as e:
             raise FaceDetectionException(f"Missing key in DeepFace result: {e}")
+
+    @staticmethod
+    def from_insightface_result(face_object: any) -> "DetectedFace":
+        # Parses a raw InsightFace detection object into a DetectedFace instance.
+        # InsightFace uses objects with attributes, not dictionaries.
+        try:
+            bbox = face_object.bbox.astype(int)
+            x1, y1, x2, y2 = bbox
+            width = x2 - x1
+            height = y2 - y1
+
+            kps = face_object.kps.astype(int)
+            keypoints_map = {
+                "left_eye":    [int(kps[0][0]), int(kps[0][1])],
+                "right_eye":   [int(kps[1][0]), int(kps[1][1])],
+                "nose":        [int(kps[2][0]), int(kps[2][1])],
+                "mouth_left":  [int(kps[3][0]), int(kps[3][1])],
+                "mouth_right": [int(kps[4][0]), int(kps[4][1])],
+            }
+
+
+            return DetectedFace(
+                x=int(x1),
+                y=int(y1),
+                width=int(width),
+                height=int(height),
+                confidence=float(face_object.det_score),
+                keypoints=keypoints_map
+            )
+        except (AttributeError, IndexError, TypeError) as e:
+            raise FaceDetectionException(f"Malformed InsightFace result: {e}")

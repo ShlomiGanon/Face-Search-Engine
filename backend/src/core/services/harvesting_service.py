@@ -2,9 +2,12 @@ from __future__ import annotations
 
 import numpy as np
 
+import src.core.io.url_loader as url_loader
 from src.core.entities.cropped_face import CroppedFace
 from src.core.interfaces.i_face_detector import IFaceDetector
 from src.core.services.face_detection_service import detect_and_crop_faces
+from src.app.config import MIN_FACE_SIZE
+
 
 
 # ── Single-frame harvesting ───────────────────────────────────────────────────
@@ -55,6 +58,19 @@ def harvest_faces_from_video(
         else []
         for frame in frames
     ]
+
+# Detects and crops all valid faces from a file (image or video).
+# Returns a list of CroppedFace objects; returns an empty list if the file
+# is None or no faces are found.
+def harvest_faces_from_frames(image_or_video_frames: np.ndarray | list[np.ndarray], detector: IFaceDetector, min_face_size: int = MIN_FACE_SIZE) -> list[CroppedFace]:
+    min_confidence = 0.0
+    if type(image_or_video_frames) == np.ndarray:
+        return harvest_faces_from_image(image_or_video_frames, detector, min_confidence, min_face_size)
+    elif type(image_or_video_frames) == list[np.ndarray]:
+        return harvest_faces_from_video(image_or_video_frames, detector, min_confidence, min_face_size)
+    else:
+        raise ValueError(f"Unsupported file type: {type(image_or_video_frames)}")
+
 
 
 # ── Count helper ──────────────────────────────────────────────────────────────
