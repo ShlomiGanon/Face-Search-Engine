@@ -8,7 +8,10 @@ import requests
 # Extracts the bare filename from a URL by stripping the path and query string.
 # For example: "https://cdn.example.com/img.jpg?v=2" → "img.jpg".
 def get_filename_from_url(url: str) -> str:
-    return url.split("/")[-1].split("?")[0]
+    filename = url.split("/")[-1].split("?")[0]
+    if not '.' in filename:
+        filename = filename + ".jpg"
+    return filename
 
 
 # Returns True when the file path ends with a known image extension.

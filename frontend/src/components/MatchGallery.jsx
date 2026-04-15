@@ -1,6 +1,6 @@
 import MatchCard from './MatchCard'
 
-export default function MatchGallery({ results, onCardClick, hasSearched }) {
+export default function MatchGallery({ results, onCardClick, hasSearched, searchMessage }) {
   if (!hasSearched) {
     return (
       <div className="ls-grid rounded-xl min-h-[400px] flex flex-col items-center justify-center space-y-4 border border-blue-100">
@@ -24,7 +24,7 @@ export default function MatchGallery({ results, onCardClick, hasSearched }) {
         </div>
         <p className="text-blue-400 text-sm font-medium">No matches found</p>
         <p className="text-gray-400 text-xs text-center max-w-sm">
-          No faces matched. Try lowering the minimum score threshold.
+          {searchMessage || 'No faces matched. Try lowering the minimum score threshold.'}
         </p>
       </div>
     )

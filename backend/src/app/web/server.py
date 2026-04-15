@@ -29,6 +29,7 @@ from src.app.ml.mtcnn_detector import MtcnnDetector
 from src.app.vector_store.faiss_vector_store import FaissVectorStore
 from src.core.services import embedding_service, harvesting_service
 from src.core.services.learn_and_search_services import learn_service
+from scripts.search_api import search_api as leadspotting_search_api
 
 logging.getLogger("tensorflow").setLevel(logging.ERROR)
 
@@ -192,6 +193,52 @@ async def learn_from_csv(file: UploadFile = File(...)) -> dict:
     }
 
 
+# Queries the Leadspotting API by name via search_api(), then formats the
+# matched social profiles as the standard HTTP response payload.
+def _run_leadspotting_pipeline(tmp_path: str, first_name: str, last_name: str) -> dict:
+    image = cv2.cvtColor(cv2.imread(tmp_path), cv2.COLOR_BGR2RGB)
+
+    cropped_faces = harvesting_service.harvest_faces_from_image(
+        image,
+        _detector,
+        config.FACE_CONFIDENCE_THRESHOLD,
+        config.MIN_FACE_SIZE,
+    )
+    if not cropped_faces:
+        return {
+            "query_faces": [],
+            "results": [],
+            "message": "No faces detected in the given image",
+        }
+
+    query_faces_b64 = [_encode_face_as_base64(cf) for cf in cropped_faces]
+
+    # Delegate all Leadspotting logic to search_api().
+    # target_frames_rgb=[image] wraps the single image so search_api can iterate over frames.
+    sorted_results = leadspotting_search_api(
+        target_first_name=first_name,
+        target_last_name=last_name,
+        target_frames_rgb=[image],
+        detector=_detector,
+        embedding_model=_embedder,
+    )
+
+    results = [
+        {
+            "face_id":      f"ls_{i}",
+            "score":        round(float(score), 4),
+            "link_to_post": profile.link,
+            "platform":     profile.platform,
+            "username":     profile.name,
+            "media_url":    profile.picture_link,
+            "timestamp":    None,
+        }
+        for i, (profile, score) in enumerate(sorted_results)
+    ]
+
+    return {"query_faces": query_faces_b64, "results": results}
+
+
 # Accepts a multipart image upload, validates it, and runs the face search pipeline.
 # Returns query face thumbnails (base64) and enriched match results.
 @app.post("/search")
@@ -216,5 +263,76 @@ async def search_by_upload(file: UploadFile = File(...)) -> dict:
         tmp_path = tmp.name
     try:
         return _run_search_pipeline(tmp_path)
+    finally:
+        os.unlink(tmp_path)
+
+
+# Accepts a multipart image upload + first/last name, queries the Leadspotting API,
+# and returns matched social profiles sorted by face similarity score.
+@app.post("/search/leadspotting")
+async def search_leadspotting_by_upload(
+    file: UploadFile = File(...),
+    first_name: str = Form(...),
+    last_name: str = Form(...),
+) -> dict:
+    if not file.content_type or not file.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="File must be an image")
+
+    suffix = (file.filename or "upload").rsplit(".", 1)[-1].lower()
+    suffix = f".{suffix}" if suffix in ("jpg", "jpeg", "png", "webp") else ".jpg"
+
+    try:
+        contents = await file.read()
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f"Failed to read file: {exc}") from exc
+
+    nparr = np.frombuffer(contents, np.uint8)
+    if cv2.imdecode(nparr, cv2.IMREAD_COLOR) is None:
+        raise HTTPException(status_code=400, detail="Invalid or corrupted image")
+
+    with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+        tmp.write(contents)
+        tmp_path = tmp.name
+    try:
+        return _run_leadspotting_pipeline(tmp_path, first_name, last_name)
+    finally:
+        os.unlink(tmp_path)
+
+
+# Accepts an image URL + first/last name, queries the Leadspotting API,
+# and returns matched social profiles sorted by face similarity score.
+@app.post("/search/leadspotting/url")
+async def search_leadspotting_by_url(
+    url: str = Form(...),
+    first_name: str = Form(...),
+    last_name: str = Form(...),
+) -> dict:
+    headers = {
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/120.0.0.0 Safari/537.36"
+        ),
+        "Accept": "image/*,*/*;q=0.8",
+    }
+    try:
+        resp = http_requests.get(url, timeout=20, headers=headers, allow_redirects=True)
+        resp.raise_for_status()
+        contents = resp.content
+    except http_requests.RequestException as exc:
+        raise HTTPException(status_code=400, detail=f"Failed to download image: {exc}") from exc
+
+    nparr = np.frombuffer(contents, np.uint8)
+    if cv2.imdecode(nparr, cv2.IMREAD_COLOR) is None:
+        raise HTTPException(
+            status_code=400,
+            detail="Could not decode image from URL. Make sure the URL points directly to an image file.",
+        )
+
+    with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
+        tmp.write(contents)
+        tmp_path = tmp.name
+    try:
+        return _run_leadspotting_pipeline(tmp_path, first_name, last_name)
     finally:
         os.unlink(tmp_path)

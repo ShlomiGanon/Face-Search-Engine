@@ -26,6 +26,7 @@ export default function App() {
   const [error, setError]                 = useState(null)
   const [modalState, setModalState]       = useState(null)
   const [backendReady, setBackendReady]   = useState(false)
+  const [searchMessage, setSearchMessage] = useState(null)
 
   // Poll /health until backend is up
   useEffect(() => {
@@ -52,6 +53,7 @@ export default function App() {
     setResults([])
     setHasSearched(false)
     setError(null)
+    setSearchMessage(null)
     setFileQueryFace(null)
     setUrlQueryFace(null)
     setLastQueryFace(null)
@@ -60,6 +62,7 @@ export default function App() {
   const runSearch = useCallback(async (fetchFn, onFaceResult) => {
     setLoading(true)
     setError(null)
+    setSearchMessage(null)
     try {
       const res = await fetchFn()
       if (!res.ok) {
@@ -71,6 +74,7 @@ export default function App() {
       onFaceResult(face)
       setLastQueryFace(face)
       setResults(data.results || [])
+      setSearchMessage(data.message || null)
       setHasSearched(true)
     } catch (e) {
       setError(e.message)
@@ -259,6 +263,7 @@ export default function App() {
               filteredResults={filteredResults}
               identityRanking={identityRanking}
               openComparison={openComparison}
+              searchMessage={searchMessage}
             />
           </div>
         )}
@@ -285,6 +290,7 @@ export default function App() {
               filteredResults={filteredResults}
               identityRanking={identityRanking}
               openComparison={openComparison}
+              searchMessage={searchMessage}
             />
           </div>
         )}
@@ -303,7 +309,7 @@ export default function App() {
   )
 }
 
-function ResultsSection({ hasSearched, filteredResults, identityRanking, openComparison }) {
+function ResultsSection({ hasSearched, filteredResults, identityRanking, openComparison, searchMessage }) {
   return (
     <section className="flex-1 min-w-0">
       <div className="mb-4 flex items-center gap-4 flex-wrap">
@@ -331,6 +337,7 @@ function ResultsSection({ hasSearched, filteredResults, identityRanking, openCom
         results={filteredResults}
         onCardClick={openComparison}
         hasSearched={hasSearched}
+        searchMessage={searchMessage}
       />
     </section>
   )

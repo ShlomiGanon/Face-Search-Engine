@@ -1,6 +1,6 @@
 export default function MatchCard({ result, onClick }) {
   const scorePct = Math.round(result.score * 100)
-  const faceImgUrl = `/faces/${result.face_id}.jpg`
+  const faceImgUrl = result.media_url || `/faces/${result.face_id}.jpg`
   const isHighScore = scorePct > 85
 
   return (
