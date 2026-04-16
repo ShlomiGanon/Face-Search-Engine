@@ -110,18 +110,25 @@ def _run_search_pipeline(tmp_path: str) -> dict:
 
     query_faces_b64 = [_encode_face_as_base64(cf) for cf in cropped_faces]
 
-    # Merge results from all query faces, keeping the highest score per face_id.
+    # Merge results from all query faces, keeping the highest score per face_id
+    # and tracking which query face index produced that best score.
     best_scores: dict[str, float] = {}
-    for cropped_face in cropped_faces:
+    best_query_face_index: dict[str, int] = {}
+    for idx, cropped_face in enumerate(cropped_faces):
         embedding = embedding_service.compute_embedding(cropped_face, _embedder)
         if embedding is None:
             continue
         for result in _vector_store.search_nearest_faces(embedding, k=50):
             fid = result["face_id"]
-            best_scores[fid] = max(best_scores.get(fid, 0.0), result["score"])
+            if result["score"] > best_scores.get(fid, 0.0):
+                best_scores[fid] = result["score"]
+                best_query_face_index[fid] = idx
 
     sorted_ids = sorted(best_scores, key=lambda x: best_scores[x], reverse=True)
-    enriched   = [_enrich_result_with_metadata(fid, best_scores[fid]) for fid in sorted_ids]
+    enriched = [
+        {**_enrich_result_with_metadata(fid, best_scores[fid]), "query_face_index": best_query_face_index[fid]}
+        for fid in sorted_ids
+    ]
 
     return {"query_faces": query_faces_b64, "results": enriched}
 

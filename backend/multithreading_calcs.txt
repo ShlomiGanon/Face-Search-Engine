@@ -1,0 +1,31 @@
+Plaintext
+FACE SEARCH ENGINE: OPTIMAL PIPELINE BREAKDOWN
+
+1. IMAGE DOWNLOAD (Parallel)
+   - Method: Multi-threaded (Asynchronous).
+   - Logic: Start all 20 image downloads from the API at once. 
+     Waiting for one-by-one is the biggest time-waster (I/O Bound).
+
+2. FACE DETECTION (MTCNN)
+   - Method: Managed Queue (Sequential/One-by-one).
+   - Logic: MTCNN is computationally heavy. Running 20 detections 
+     simultaneously will crash your RAM or GPU. A "Manager" 
+     processes them in a fast, stable sequence.
+
+3. ALIGN & WARP (Pre-process)
+   - Method: Immediate (Right after Detection).
+   - Logic: Once MTCNN finds the landmarks (eyes/nose), the 
+     Manager instantly rotates and crops the face. This is 
+     fast math (CPU) and happens before the next detection starts.
+
+4. BATCHING (Collection)
+   - Method: Array Aggregation.
+   - Logic: The Manager collects all 20 cropped and aligned faces 
+     into a single 4D Matrix (N, 112, 112, 3) instead of 
+     sending them to ArcFace individually.
+
+5. FACE EMBEDDING (ArcFace)
+   - Method: Batch Inference (Single Call).
+   - Logic: Do not call the ArcFace model 20 times. Sending the 
+     entire batch in one shot is the most efficient way to use 
+     your hardware and reduces overhead significantly.
