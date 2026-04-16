@@ -36,8 +36,6 @@ def search_api(
     # (numpy arrays are not hashable and cannot be used as dict keys).
     embedding_profile_pairs: list[tuple[np.ndarray, SocialProfile]] = []
 
-
-    fail_count = 0
     for profile in profiles:
         media_links = profile.get_all_images_links()
         for media_link in media_links:
@@ -51,14 +49,7 @@ def search_api(
                     embedding = embedding_model.compute_embedding(embedding_model.preprocess(cf))
                     embedding_profile_pairs.append((embedding, profile))
             except Exception as e:
-                fail_count += 1
-                with open(debug_file, "a") as f:
-                    f.write(f"Error: {e}\n")
-
-    with open(debug_file, "a") as f:
-        f.write(f"profiles_count: {len(profiles)}\n")
-        f.write(f"fail_count: {fail_count}\n")
-        f.write(f"------------------------------------------------------------------------- \n")
+                pass # Ignore errors
 
     # Compute embeddings for the target query image.
     target_embeddings = []
